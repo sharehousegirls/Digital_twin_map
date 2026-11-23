@@ -21,9 +21,11 @@ export default function App() {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('지도 초기화 중')
   const [mapReady, setMapReady] = useState(false)
+  const [runtimeError, setRuntimeError] = useState('')
 
   useEffect(() => {
     if (!mapRef.current || viewerRef.current) return
+    try {
     const viewer = new Viewer(mapRef.current, {
       animation:false, timeline:false, geocoder:false, homeButton:false,
       sceneModePicker:false, navigationHelpButton:false, baseLayerPicker:false,
@@ -69,6 +71,12 @@ export default function App() {
     setStatus('지도 준비 완료')
     setMapReady(true)
     return () => { handler.destroy(); viewer.destroy(); viewerRef.current = null }
+    } catch (error) {
+      console.error('Cesium initialization failed:', error)
+      setRuntimeError(error?.message || String(error))
+      setStatus('지도 초기화 실패')
+      setMapReady(true)
+    }
   }, [])
 
   useEffect(() => {
@@ -115,6 +123,7 @@ export default function App() {
         {selected && <div className="detail-card"><button className="close-detail" onClick={()=>setSelected(null)}>×</button><span className="eyebrow">SELECTED OBJECT</span><h3>{selected.name}</h3><p className="detail-id">{selected.id}</p><div className="detail-grid"><div><small>용도</small><strong>{selected.type}</strong></div><div><small>층수</small><strong>{selected.floors}층</strong></div><div><small>준공년도</small><strong>{selected.year}</strong></div><div><small>시범 높이</small><strong>{selected.height}m</strong></div></div><button className="detail-action" onClick={()=>flyToBuilding(selected)}>지도에서 위치 보기 ↗</button></div>}
         <div className="map-credit">© OpenStreetMap contributors · 3D sample objects</div>
         {!mapReady && <div className="loading-overlay"><div className="loader"/><span>3D 지도 준비 중...</span></div>}
+        {runtimeError && <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',padding:20,background:'#101923dd',zIndex:20}}><div style={{maxWidth:560,width:'100%',background:'#1b2a38',border:'1px solid #e07878',borderRadius:12,padding:20,color:'#e8f0f5'}}><h3 style={{marginTop:0,color:'#ff9999'}}>지도 초기화 오류</h3><p style={{fontSize:13,lineHeight:1.6}}>3D 지도 초기화 중 오류가 발생했습니다. 오류 내용을 개발 진단에 사용합니다.</p><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontSize:12,color:'#ffd5d5'}}>{runtimeError}</pre><button onClick={()=>window.location.reload()} style={{padding:'10px 14px',background:'#263d50',border:'1px solid #55758d',borderRadius:8,color:'white'}}>새로고침</button></div></div>}
       </section>
     </main>
     <footer className="footer"><span>DAEGU DIGITAL TWIN <b>•</b> DEVELOPMENT BUILD 0.1</span><span>DATA STATUS: <strong>DEMO / NOT OFFICIAL</strong></span></footer>
